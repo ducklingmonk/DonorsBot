@@ -100,7 +100,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
                    [question] for question in QUESTIONS  # Each question is in its own row
                ] + [
-                   ["Задать вопрос❓ менеджеру"]  # Additional button in its own row
+                   ["Свой вопрос❓"]  # Additional button in its own row
                ]
     reply_markup = ReplyKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -125,11 +125,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Сообщение из группы менеджеров пропущено")
         return
 
-    if user_message == "Задать вопрос❓ менеджеру":
-        # Handle "Задать вопрос менеджеру" button
-        await update.message.reply_text("Напишите свой вопрос в строке ниже:")
+    if user_message == "Свой вопрос❓":
+        await update.message.reply_text("Напишите вопрос в строке ниже и в ближайшее время организатор ответит Вам")
         logger.info(
-            f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) нажал кнопку 'Задать вопрос менеджеру'.")
+            f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) нажал кнопку 'Свой вопрос❓")
     elif user_message in REPLIES:
         # Send the answer if the question is in the list
         await update.message.reply_text(REPLIES[user_message])
