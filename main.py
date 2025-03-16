@@ -118,8 +118,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(
             f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) нажал кнопку 'Свой вопрос❓'.")
     elif user_message in REPLIES:
-        # Send the answer if the question is in the list
-        await update.message.reply_text(REPLIES[user_message])
+        await context.bot.send_message(
+            chat_id=user_chat_id,
+            text=REPLIES[user_message],
+            parse_mode="HTML"
+        )
         logger.info(
             f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) задал вопрос: {user_message}. Ответ: {REPLIES[user_message]}")
     else:
