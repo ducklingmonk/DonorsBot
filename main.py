@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Load manager group chat ID from environment variable
 MANAGER_GROUP_CHAT_ID = int(os.getenv("MANAGER_GROUP_CHAT_ID", 0))  # Replace with your manager group ID
 TEMBO_DB_URL = os.getenv("TEMBO_DATABASE_URL")
-
+RENDER_URL = os.getenv("RENDER_URL")
 
 # Инициализация базы данных
 async def init_db():
