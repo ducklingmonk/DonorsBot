@@ -199,7 +199,6 @@ async def main():
 
         # Бесконечное ожидание через asyncio
         await asyncio.get_event_loop().create_future()
-
     except asyncio.CancelledError:
         logger.info("Получен сигнал завершения")
     finally:
