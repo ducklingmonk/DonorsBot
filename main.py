@@ -6,7 +6,6 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from urllib.parse import urlparse
 import asyncio
 from data import QUESTIONS, REPLIES
-from dotenv import load_dotenv
 
 
 # Load environment variables from .env file
