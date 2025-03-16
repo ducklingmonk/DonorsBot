@@ -7,9 +7,6 @@ from urllib.parse import urlparse
 import asyncio
 from data import QUESTIONS, REPLIES
 
-
-# Load environment variables from .env file
-load_dotenv()
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
