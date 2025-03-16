@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 import asyncio
 from data import QUESTIONS, REPLIES
 
-# Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -119,39 +118,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(
             f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) нажал кнопку 'Свой вопрос❓'.")
     elif user_message in REPLIES:
-        # Получаем данные ответа
-        reply_data = REPLIES.get(user_message)
-
-        if reply_data:
-            try:
-                # Если ответ содержит видео
-                if isinstance(reply_data, dict):
-                    text = reply_data.get("text", "")
-                    video_id = reply_data.get("video_id")
-
-                    # Отправляем текст
-                    if text:
-                        await update.message.reply_text(text)
-
-                    # Отправляем видео
-                    if video_id:
-                        await context.bot.send_video(
-                            chat_id=user_chat_id,
-                            video=video_id,
-                            caption="📹 Видеоинструкция:"
-                        )
-
-                # Обычный текстовый ответ
-                else:
-                    await update.message.reply_text(reply_data)
-
-                logger.info(
-                    f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) задал вопрос: {user_message}. Ответ: {REPLIES[user_message]}")
-
-            except Exception as e:
-                logger.error(f"Ошибка отправки видео: {str(e)}")
-                await update.message.reply_text("⚠️ Не удалось загрузить видео.")
-
+        # Send the answer if the question is in the list
+        await update.message.reply_text(REPLIES[user_message])
+        logger.info(
+            f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) задал вопрос: {user_message}. Ответ: {REPLIES[user_message]}")
     else:
         try:
             db = context.bot_data['db']
@@ -197,8 +167,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.exception(f"An unexpected error occurred: {e}")
             await update.message.reply_text("❌ Произошла неизвестная ошибка. Пожалуйста, попробуйте позже.")
 
-
-
 async def main():
     TOKEN = os.getenv("BOT_TOKEN")
     if not TOKEN:
@@ -211,6 +179,7 @@ async def main():
     # Регистрация обработчиков
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
     # Запуск вебхука
     await app.initialize()
     await app.start()
