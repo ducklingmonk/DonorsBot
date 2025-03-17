@@ -193,8 +193,7 @@ async def main():
             listen="0.0.0.0",
             port=PORT,
             url_path=TOKEN,
-            webhook_url=f"{RENDER_URL}{TOKEN}",
-            drop_pending_updates=True
+            webhook_url=f"{RENDER_URL}{TOKEN}"
         )
 
         # Бесконечное ожидание через asyncio
