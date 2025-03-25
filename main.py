@@ -1,10 +1,7 @@
 import os
 import logging
-import asyncpg
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from urllib.parse import urlparse
-import asyncio
 from data import QUESTIONS, REPLIES
 
 logging.basicConfig(
@@ -18,60 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Load manager group chat ID from environment variable
 MANAGER_GROUP_CHAT_ID = int(os.getenv("MANAGER_GROUP_CHAT_ID", 0))  # Replace with your manager group ID
-TEMBO_DB_URL = os.getenv("TEMBO_DATABASE_URL")
 RENDER_URL = os.getenv("RENDER_URL")
-
-# Инициализация базы данных
-async def init_db():
-    try:
-        parsed = urlparse(TEMBO_DB_URL)
-        conn = await asyncpg.connect(
-            user=parsed.username,
-            password=parsed.password,
-            database=parsed.path.lstrip('/'),
-            host=parsed.hostname,
-            port=parsed.port,
-            ssl="require"
-        )
-        logger.info("Successfully connected to Tembo PostgreSQL")
-    except Exception as e:
-        logger.error(f"Connection error: {str(e)}")
-        raise
-
-    await conn.execute('''
-        CREATE TABLE IF NOT EXISTS messages (
-            id SERIAL PRIMARY KEY,
-            user_chat_id BIGINT NOT NULL,
-            user_message_id INT NOT NULL,
-            group_message_id INT NOT NULL UNIQUE,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    ''')
-    logger.info("Проверка таблицы messages: OK")
-
-    return conn
-
-async def reconnect_db():
-    db_conn = None
-    retries = 3
-    for attempt in range(1, retries + 1):
-        try:
-            parsed = urlparse(TEMBO_DB_URL)
-            db_conn = await asyncpg.connect(
-                user=parsed.username,
-                password=parsed.password,
-                database=parsed.path.lstrip('/'),
-                host=parsed.hostname,
-                port=parsed.port,
-                ssl="require"
-            )
-            logger.info(f"Successfully reconnected to Tembo PostgreSQL (attempt {attempt}/{retries}).")
-            return db_conn
-        except Exception as e:
-            logger.error(f"Database connection failed (attempt {attempt}/{retries}): {e}")
-            await asyncio.sleep(2**attempt) # Exponential backoff
-    logger.error("Failed to reconnect to the database after multiple attempts.")
-    return None
 
 # Styled "Back" button
 BACK_BUTTON = "⬅️ Назад"
@@ -127,36 +71,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"[handle_message] Пользователь @{user_username} (ID: {user_chat_id}) задал вопрос: {user_message}. Ответ: {REPLIES[user_message]}")
     else:
         try:
-            db = context.bot_data['db']
-            if db is None or db.is_closed():
-                db = await reconnect_db()
-                context.bot_data['db'] = db
-                logger.info("Reconnection?")
-                if db is None:
-                    raise Exception("Failed to connect to database")
-            logger.info("Connection success!")
             if MANAGER_GROUP_CHAT_ID:
                 try:
-                    async with db.transaction():  # Wrap everything in a transaction
-                        # Forward the message and store the result in the database.
-                        # Отправляем ОЧИЩЕННОЕ сообщение вместо оригинального
-                        forwarded = await context.bot.send_message(
-                            chat_id=MANAGER_GROUP_CHAT_ID,
-                            text=f"От @{user_username}:\n{user_message}"
-                        )
-                        # Only insert into DB if forwarding was successful.
-                        await db.execute(
-                            "INSERT INTO messages (user_chat_id, user_message_id, group_message_id) VALUES ($1, $2, $3)",
-                            user_chat_id, user_message_id, forwarded.message_id
-                        )
+                    # Forward the message
+                    forwarded = await context.bot.send_message(
+                        chat_id=MANAGER_GROUP_CHAT_ID,
+                        text=f"От @{user_username}:\n{user_message}"
+                    )
 
-                        logger.info(
-                            f"[handle_message] Сообщение пользователя @{user_username} (ID: {user_chat_id}) переслано в группу менеджеров (ID: {MANAGER_GROUP_CHAT_ID}). ID пересланного сообщения: {forwarded.message_id}."
-                        )
-                        await update.message.reply_text("✅ Ваш вопрос передан. Ожидайте ответа.")
+                    logger.info(
+                        f"[handle_message] Сообщение пользователя @{user_username} (ID: {user_chat_id}) переслано в группу менеджеров (ID: {MANAGER_GROUP_CHAT_ID}). ID пересланного сообщения: {forwarded.message_id}."
+                    )
+                    await update.message.reply_text("✅ Ваш вопрос передан. Ожидайте ответа.")
 
                 except Exception as e:
-                    logger.error(f"Ошибка пересылки или записи в базу данных: {e}")
+                    logger.error(f"Ошибка пересылки: {e}")
                     await update.message.reply_text(
                         "❌ Произошла ошибка при пересылке вопроса менеджеру. Пожалуйста, попробуйте позже."
                     )
@@ -175,9 +104,7 @@ async def main():
     if not TOKEN:
         raise ValueError("BOT_TOKEN не найден!")
 
-    db = await init_db()
     app = Application.builder().token(TOKEN).build()
-    app.bot_data['db'] = db
 
     # Регистрация обработчиков
     app.add_handler(CommandHandler("start", start))
@@ -203,11 +130,9 @@ async def main():
     finally:
         await app.stop()
         await app.shutdown()
-        await db.close()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
-
