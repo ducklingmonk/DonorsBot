@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from data import QUESTIONS, REPLIES
@@ -19,10 +20,6 @@ RENDER_URL = os.getenv("RENDER_URL")
 
 # Styled "Back" button
 BACK_BUTTON = "⬅️ Назад"
-
-# Dictionary to store the relationship between user and forwarded messages
-user_manager_messages = {}
-
 
 # Command /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
