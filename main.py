@@ -3,7 +3,7 @@ import logging
 import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from data import QUESTIONS, REPLIES
+from data import MENU_TREE, ANSWERS
 
 logging.basicConfig(
     level=logging.DEBUG,
