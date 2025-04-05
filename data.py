@@ -38,7 +38,8 @@ MENU_TREE = {
                 "Кровь": "blood"
             },
             "Временные": {  # Changed from string to dict
-                "Общие": "temporary_contr"  # Now matches structure
+                "Общие": "temporary_contr",
+                "Специальные": "special_contr" # Now matches structure
             }
         },
         "Календарь": {
@@ -80,6 +81,7 @@ ANSWERS = {
     "mental": """.""",
     "blood": """.""",
     "temporary_contr": """.""",
+    "special_contr": """.""",
     "calendar_location": """.""",
     "events": """.""",
     "donation_video": """.""",
