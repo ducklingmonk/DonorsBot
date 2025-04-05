@@ -42,9 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-
 async def show_current_menu(update: Update, path):
-    """Show menu for current navigation path"""
     node = get_node_from_path(path)
 
     if node is None:
@@ -55,10 +53,10 @@ async def show_current_menu(update: Update, path):
     if isinstance(node, dict):
         keyboard = [[item] for item in node.keys()]
 
-    # Add Back button if not in main menu
+    # Добавляем кнопку "Назад" (если не в главном меню)
     if len(path) > 1:
         keyboard.append([BACK_BUTTON])
-    # Add custom question only in main menu
+    # Добавляем "Свой вопрос" ТОЛЬКО в главном меню
     elif len(path) == 1:
         keyboard.append([CUSTOM_QUESTION_BUTTON])
 
@@ -81,21 +79,21 @@ def get_node_from_path(path):
     for step in path[1:]:  # Skip "Main Menu"
         if step in node:
             node = node[step]
-            # Removed the string check to allow proper navigation
+            if isinstance(node, str):  # If it's an answer reference
+                return None
         else:
             return None
     return node
 
-
 def find_matching_answer(question):
     """Searches all menu items for matching text (case-insensitive)"""
     question = question.lower()
-    # Check both menu items and direct answer keys
-    for key, value in MENU_TREE.items():
-        if question == key.lower():
-            if isinstance(value, str):
-                return ANSWERS.get(value)
-
+    # Check main categories
+    for category, items in MENU_TREE.items():
+        if question == category.lower():
+            if isinstance(items, str):
+                return ANSWERS.get(items)
+    # Check submenus
     stack = list(MENU_TREE.values())
     while stack:
         node = stack.pop()
@@ -108,15 +106,14 @@ def find_matching_answer(question):
                     stack.append(value)
     return None
 
-
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle all text messages"""
     user_id = update.effective_user.id
     user_message = update.message.text
 
-    # Initialize navigation if needed
     if user_id not in user_navigation:
-        user_navigation[user_id] = ["Main Menu"]
+        await start(update, context)  # Reset to main menu
+        return
 
     current_path = user_navigation[user_id]
     logger.debug(f"User {user_id} at path {current_path} selected: {user_message}")
@@ -129,40 +126,54 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Handle custom question
     if user_message == CUSTOM_QUESTION_BUTTON:
-        await update.message.reply_text("Напишите свой вопрос в строке ниже:")
+        await update.message.reply_text(
+            "Напишите свой вопрос в строке ниже, и мы ответим вам в ближайшее время."
+        )
         return
 
-    # FIRST check if this is a direct answer
+    # FIRST - Check ALL menu items for matching text
     answer = find_matching_answer(user_message)
     if answer:
         await update.message.reply_text(answer)
         return await show_current_menu(update, current_path)
 
-    # THEN handle menu navigation
-    current_node = get_node_from_path(current_path)
-
-    if current_node is None:
-        return await show_current_menu(update, ["Main Menu"])
-
-    if isinstance(current_node, dict) and user_message in current_node:
-        next_node = current_node[user_message]
-
-        if isinstance(next_node, dict):  # Submenu
-            current_path.append(user_message)
-            return await show_current_menu(update, current_path)
-        else:  # Answer reference
-            answer = ANSWERS.get(next_node, "Извините, ответ не найден.")
-            await update.message.reply_text(answer)
-            # Stay at current level after showing answer
-            return await show_current_menu(update, current_path)
-
-    # If selection is another main category while in submenu
-    if user_message in MENU_TREE:
+    # Check if selection is a main category (at root level)
+    if current_path[-1] == "Main Menu" and user_message in MENU_TREE:
+        # Reset path and enter selected category
         user_navigation[user_id] = ["Main Menu", user_message]
         return await show_current_menu(update, user_navigation[user_id])
 
-    # Unrecognized input - show current menu
-    await show_current_menu(update, current_path)
+    # Get current node in menu tree
+    current_node = get_node_from_path(current_path)
+
+    # If navigating deeper in menu
+    if isinstance(current_node, dict) and user_message in current_node:
+        next_node = current_node[user_message]
+
+        if isinstance(next_node, dict):
+            # It's a submenu - go deeper
+            current_path.append(user_message)
+        else:
+            # It's an answer reference - send the answer
+            answer = ANSWERS.get(next_node, "Извините, ответ не найден.")
+            await update.message.reply_text(answer)
+
+        # Always show current menu after action
+        return await show_current_menu(update, current_path)
+
+    # If selection is another main category while in submenu
+    if user_message in MENU_TREE:
+        # Switch to new category completely
+        user_navigation[user_id] = ["Main Menu", user_message]
+        return await show_current_menu(update, user_navigation[user_id])
+
+    # If we get here, it's an unrecognized message
+    if len(current_path) > 1:
+        # If in submenu, show current menu again
+        return await show_current_menu(update, current_path)
+    else:
+        # At root level, forward to manager
+        await forward_to_manager(update, context)
 
 
 async def forward_to_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
