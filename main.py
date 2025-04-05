@@ -71,122 +71,81 @@ async def show_current_menu(update: Update, path):
 
 
 def get_node_from_path(path):
-    """Get current node in menu tree based on navigation path"""
-    if path[-1] == "Main Menu":
+    """Safe path navigation that preserves your restart logic"""
+    if not path or path[-1] == "Main Menu":
         return MENU_TREE
 
     node = MENU_TREE
     for step in path[1:]:  # Skip "Main Menu"
-        if step in node:
+        if isinstance(node, dict) and step in node:
             node = node[step]
-            if isinstance(node, str):  # If it's an answer reference
-                return None
         else:
             return None
     return node
 
-def find_matching_answer(question, current_path):
-    """Finds the best matching answer, prioritizing the current menu level."""
-    question = question.strip().lower()  # Normalize input
 
-    # 1. FIRST, check the current menu level (most specific match)
-    current_node = get_node_from_path(current_path)
-    if isinstance(current_node, dict):
-        # Case-insensitive match for current menu items
-        for item_key, item_value in current_node.items():
-            if item_key.lower() == question:
-                if isinstance(item_value, str):  # Direct answer key
-                    return ANSWERS.get(item_value)
-                break  # If it's a submenu, don't return yet
+def get_answer_from_path(full_path: list) -> str:
+    """Exact path matching for duplicate menu items"""
+    node = MENU_TREE
+    for step in full_path[1:]:  # Skip "Main Menu"
+        if isinstance(node, dict) and step in node:
+            node = node[step]
+        else:
+            return None
+    return ANSWERS.get(node) if isinstance(node, str) else None
 
-    # 2. If no match in current menu, check ALL menu items (global fallback)
-    for menu_key, menu_value in MENU_TREE.items():
-        if menu_key.lower() == question:
-            if isinstance(menu_value, str):
-                return ANSWERS.get(menu_value)
-            break  # Submenu case
 
-    # 3. Deep search in nested menus (optional, if needed)
-    stack = list(MENU_TREE.items())
-    while stack:
-        key, value = stack.pop()
-        if isinstance(value, dict):
-            for sub_key, sub_value in value.items():
-                if sub_key.lower() == question:
-                    if isinstance(sub_value, str):
-                        return ANSWERS.get(sub_value)
-            stack.extend(value.items())
-
-    return None  # No match found
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle all text messages"""
     user_id = update.effective_user.id
     user_message = update.message.text
 
+    # YOUR RESTART LOGIC (preserved exactly)
     if user_id not in user_navigation:
-        await start(update, context)  # Reset to main menu
+        await start(update, context)  # Your original restart call
         return
 
     current_path = user_navigation[user_id]
-    logger.debug(f"User {user_id} at path {current_path} selected: {user_message}")
 
-    # Handle back button
+    # Handle special buttons
     if user_message == BACK_BUTTON:
         if len(current_path) > 1:
-            current_path.pop()  # Go back one level
+            current_path.pop()
         return await show_current_menu(update, current_path)
 
-    # Handle custom question
     if user_message == CUSTOM_QUESTION_BUTTON:
-        await update.message.reply_text(
-            "Напишите свой вопрос в строке ниже, и мы ответим вам в ближайшее время."
-        )
+        await update.message.reply_text("Напишите свой вопрос в строке ниже, и мы ответим вам в ближайшее время.")
         return
 
-    # FIRST - Check ALL menu items for matching text
-    answer = find_matching_answer(user_message, current_path)
+    # 1. Try exact path-based answer first
+    test_path = current_path + [user_message]
+    answer = get_answer_from_path(test_path)
     if answer:
         await update.message.reply_text(answer)
         return await show_current_menu(update, current_path)
 
-    # Check if selection is a main category (at root level)
-    if current_path[-1] == "Main Menu" and user_message in MENU_TREE:
-        # Reset path and enter selected category
-        user_navigation[user_id] = ["Main Menu", user_message]
-        return await show_current_menu(update, user_navigation[user_id])
-
-    # Get current node in menu tree
+    # 2. Handle menu navigation
     current_node = get_node_from_path(current_path)
-
-    # If navigating deeper in menu
     if isinstance(current_node, dict) and user_message in current_node:
         next_node = current_node[user_message]
 
-        if isinstance(next_node, dict):
-            # It's a submenu - go deeper
+        if isinstance(next_node, dict):  # Submenu
             current_path.append(user_message)
-        else:
-            # It's an answer reference - send the answer
+        else:  # Answer reference
             answer = ANSWERS.get(next_node, "Извините, ответ не найден.")
             await update.message.reply_text(answer)
 
-        # Always show current menu after action
         return await show_current_menu(update, current_path)
 
-    # If selection is another main category while in submenu
+    # 3. Handle main category switches
     if user_message in MENU_TREE:
-        # Switch to new category completely
         user_navigation[user_id] = ["Main Menu", user_message]
         return await show_current_menu(update, user_navigation[user_id])
 
-    # If we get here, it's an unrecognized message
+    # YOUR ORIGINAL FORWARDING LOGIC (preserved exactly)
     if len(current_path) > 1:
-        # If in submenu, show current menu again
         return await show_current_menu(update, current_path)
     else:
-        # At root level, forward to manager
-        await forward_to_manager(update, context)
-
+        await forward_to_manager(update, context)  # Your original forwarding
 
 async def forward_to_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Forward user's question to manager group"""
