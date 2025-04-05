@@ -85,27 +85,39 @@ def get_node_from_path(path):
             return None
     return node
 
-def find_matching_answer(question):
-    """Searches all menu items for matching text (case-insensitive)"""
-    question = question.lower()
-    # Check main categories
-    for category, items in MENU_TREE.items():
-        if question == category.lower():
-            if isinstance(items, str):
-                return ANSWERS.get(items)
-    # Check submenus
-    stack = list(MENU_TREE.values())
-    while stack:
-        node = stack.pop()
-        if isinstance(node, dict):
-            for item, value in node.items():
-                if question == item.lower():
-                    if isinstance(value, str):
-                        return ANSWERS.get(value)
-                elif isinstance(value, dict):
-                    stack.append(value)
-    return None
+def find_matching_answer(question, current_path):
+    """Finds the best matching answer, prioritizing the current menu level."""
+    question = question.strip().lower()  # Normalize input
 
+    # 1. FIRST, check the current menu level (most specific match)
+    current_node = get_node_from_path(current_path)
+    if isinstance(current_node, dict):
+        # Case-insensitive match for current menu items
+        for item_key, item_value in current_node.items():
+            if item_key.lower() == question:
+                if isinstance(item_value, str):  # Direct answer key
+                    return ANSWERS.get(item_value)
+                break  # If it's a submenu, don't return yet
+
+    # 2. If no match in current menu, check ALL menu items (global fallback)
+    for menu_key, menu_value in MENU_TREE.items():
+        if menu_key.lower() == question:
+            if isinstance(menu_value, str):
+                return ANSWERS.get(menu_value)
+            break  # Submenu case
+
+    # 3. Deep search in nested menus (optional, if needed)
+    stack = list(MENU_TREE.items())
+    while stack:
+        key, value = stack.pop()
+        if isinstance(value, dict):
+            for sub_key, sub_value in value.items():
+                if sub_key.lower() == question:
+                    if isinstance(sub_value, str):
+                        return ANSWERS.get(sub_value)
+            stack.extend(value.items())
+
+    return None  # No match found
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle all text messages"""
     user_id = update.effective_user.id
