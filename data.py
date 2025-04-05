@@ -78,7 +78,6 @@ ANSWERS = {
     "mental": """.""",
     "blood": """.""",
     "temporary_contr": """.""",
-    "special_contr": """.""",
     "calendar_location": """.""",
     "events": """.""",
     "donation_video": """.""",
