@@ -37,9 +37,7 @@ MENU_TREE = {
                 "Психические": "mental",
                 "Кровь": "blood"
             },
-            "Временные": {  # Changed from string to dict
-                "Общие": "temporary_contr"
-            }
+            "Временные": "temporary_contr"
         },
         "Календарь": {
             "Где найти?": "calendar_location",
