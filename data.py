@@ -14,7 +14,7 @@ MENU_TREE = {
             {"РНИМУ": "rnimu",
              "Парт. центры": "part_centers"
              },
-        "Общие противопоказания": "contraindications",
+        "Противопоказания": "contraindications",
     },
     "Где мы?": "location",
     "Акции": {
