@@ -14,7 +14,7 @@ MENU_TREE = {
             {"РНИМУ": "rnimu",
              "Парт. центры": "part_centers"
              },
-        "Противопоказания": "contraindications",
+        "Общие противопоказания": "contraindications",
     },
     "Где мы?": "location",
     "Акции": {
@@ -38,8 +38,7 @@ MENU_TREE = {
                 "Кровь": "blood"
             },
             "Временные": {  # Changed from string to dict
-                "Общие": "temporary_contr",
-                "Специальные": "special_contr" # Now matches structure
+                "Общие": "temporary_contr"
             }
         },
         "Календарь": {
