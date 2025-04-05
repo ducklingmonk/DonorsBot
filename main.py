@@ -144,7 +144,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # FIRST - Check ALL menu items for matching text
-    answer = find_matching_answer(user_message)
+    answer = find_matching_answer(user_message, current_path)
     if answer:
         await update.message.reply_text(answer)
         return await show_current_menu(update, current_path)
