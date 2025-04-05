@@ -35,9 +35,11 @@ MENU_TREE = {
                 "Инфекции": "infections",
                 "Дыхание": "breathing",
                 "Психические": "mental",
-                "Кровь": "blood",
+                "Кровь": "blood"
             },
-            "Временные": "temporary_contr"
+            "Временные": {  # Changed from string to dict
+                "Общие": "temporary_contr"  # Now matches structure
+            }
         },
         "Календарь": {
             "Где найти?": "calendar_location",
@@ -83,5 +85,5 @@ ANSWERS = {
     "donation_video": """.""",
     "donation_instruction": """.""",
     "lk_video": """.""",
-    "lk_instruction": """.""",
+    "lk_instruction": """."""
 }
