@@ -120,7 +120,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     test_path = current_path + [user_message]
     answer = get_answer_from_path(test_path)
     if answer:
-        await update.message.reply_text(answer)
+        await update.message.reply_text(answer, parse_mode='HTML')  
         return await show_current_menu(update, current_path)
 
     # 2. Handle menu navigation
