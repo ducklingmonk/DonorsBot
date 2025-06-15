@@ -66,7 +66,7 @@ async def show_current_menu(update: Update, path):
 
     # Просто обновляем клавиатуру, не отправляя текст
     await update.message.reply_text(
-        text="\u200b",  # <- no caption
+        text="\u00A0",  # Неразрывный пробел (всегда проходит)
         reply_markup=reply_markup
     )
 
