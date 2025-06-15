@@ -120,7 +120,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     test_path = current_path + [user_message]
     answer = get_answer_from_path(test_path)
     if answer:
-        await update.message.reply_text(answer, parse_mode='HTML')  
+        if isinstance(answer, dict):
+            if "photo_url" in answer:
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=answer["photo_url"],
+                    caption=answer.get("text", "")
+                )
+            else:
+                await update.message.reply_text(answer.get("text", ""), parse_mode='HTML')
+        else:
+            await update.message.reply_text(answer, parse_mode='HTML')
         return await show_current_menu(update, current_path)
 
     # 2. Handle menu navigation
@@ -128,9 +138,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(current_node, dict) and user_message in current_node:
         next_node = current_node[user_message]
 
-        if isinstance(next_node, dict):  # Submenu
+        # Если ключ в автоответных и есть ответ
+        if user_message in AUTO_REPLY_KEYS:
+            full_path = current_path + [user_message]
+            answer = get_answer_from_path(full_path)
+            if answer:
+                await update.message.reply_text(answer, parse_mode='HTML')
+
+        if isinstance(next_node, dict):  # Переход в подменю
             current_path.append(user_message)
-        else:  # Answer reference
+
+        elif isinstance(next_node, str):  # Конечный ответ
             answer = ANSWERS.get(next_node, "Извините, ответ не найден.")
             await update.message.reply_text(answer)
 
