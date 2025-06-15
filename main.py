@@ -43,7 +43,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-async def show_current_menu(update: Update, path, context: ContextTypes.DEFAULT_TYPE):
+async def show_current_menu(update: Update, path):
     node = get_node_from_path(path)
     user_id = update.effective_user.id
     if node is None:
@@ -142,22 +142,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             answer_key = next_node["_answer"]
             await send_answer(update, context, ANSWERS.get(answer_key))
             path.append(msg)                    # перейти внутрь
-            return await show_current_menu(update, path, context)
+            return await show_current_menu(update, path)
 
         # ②  Если next_node — конечная строка‑ключ
         if isinstance(next_node, str):
             await send_answer(update, context, ANSWERS.get(next_node))
-            return await show_current_menu(update, path, context)
+            return await show_current_menu(update, path)
 
         # ③  Обычное подменю‑словарь без _answer
         if isinstance(next_node, dict):
             path.append(msg)
-            return await show_current_menu(update, path, context)
+            return await show_current_menu(update, path)
 
     # ── Переход из главного меню
     if msg in MENU_TREE:
         user_navigation[user_id] = ["Main Menu", msg]
-        return await show_current_menu(update, user_navigation[user_id], context)
+        return await show_current_menu(update, user_navigation[user_id])
 
     # ── Не распознали — шлём менеджеру
     if len(path) > 1:
