@@ -66,7 +66,7 @@ async def show_current_menu(update: Update, path):
 
     # Просто обновляем клавиатуру, не отправляя текст
     await update.message.reply_text(
-        text=" ",  # <- no caption
+        text="➡️",
         reply_markup=reply_markup
     )
 
