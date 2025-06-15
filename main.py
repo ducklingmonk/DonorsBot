@@ -99,14 +99,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_message = update.message.text
 
-    # YOUR RESTART LOGIC (preserved exactly)
+    # 0. Рестарт логика
     if user_id not in user_navigation:
-        await start(update, context)  # Your original restart call
+        await start(update, context)
         return
 
     current_path = user_navigation[user_id]
 
-    # Handle special buttons
+    # 1. Обработка спец-кнопок
     if user_message == BACK_BUTTON:
         if len(current_path) > 1:
             current_path.pop()
@@ -116,7 +116,31 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Напишите свой вопрос в строке ниже, и мы ответим вам в ближайшее время.")
         return
 
-    # 1. Try exact path-based answer first
+    # 2. Обработка AUTO_REPLY_KEYS — СРАЗУ отправка ответа + переход в подменю
+    if user_message in AUTO_REPLY_KEYS:
+        full_path = current_path + [user_message]
+        answer = get_answer_from_path(full_path)
+
+        if isinstance(answer, dict):
+            if "photo_url" in answer:
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=answer["photo_url"],
+                    caption=answer.get("text", "")
+                )
+            else:
+                await update.message.reply_text(answer.get("text", ""), parse_mode='HTML')
+        elif answer:
+            await update.message.reply_text(answer, parse_mode='HTML')
+
+        # Если в дереве действительно есть подменю — войдём в него
+        current_node = get_node_from_path(current_path)
+        if isinstance(current_node, dict) and user_message in current_node:
+            current_path.append(user_message)
+
+        return await show_current_menu(update, current_path)
+
+    # 3. Проверка на точный ответ по пути
     test_path = current_path + [user_message]
     answer = get_answer_from_path(test_path)
     if answer:
@@ -133,37 +157,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(answer, parse_mode='HTML')
         return await show_current_menu(update, current_path)
 
-    # 2. Handle menu navigation
+    # 4. Обычная навигация по меню
     current_node = get_node_from_path(current_path)
     if isinstance(current_node, dict) and user_message in current_node:
         next_node = current_node[user_message]
 
-        # Если ключ в автоответных и есть ответ
-        if user_message in AUTO_REPLY_KEYS:
-            full_path = current_path + [user_message]
-            answer = get_answer_from_path(full_path)
-            if answer:
-                await update.message.reply_text(answer, parse_mode='HTML')
-
-        if isinstance(next_node, dict):  # Переход в подменю
+        if isinstance(next_node, dict):
             current_path.append(user_message)
 
-        elif isinstance(next_node, str):  # Конечный ответ
+        elif isinstance(next_node, str):
             answer = ANSWERS.get(next_node, "Извините, ответ не найден.")
-            await update.message.reply_text(answer)
+            await update.message.reply_text(answer, parse_mode='HTML')
 
         return await show_current_menu(update, current_path)
 
-    # 3. Handle main category switches
+    # 5. Переход на раздел из корня
     if user_message in MENU_TREE:
         user_navigation[user_id] = ["Main Menu", user_message]
         return await show_current_menu(update, user_navigation[user_id])
 
-    # YOUR ORIGINAL FORWARDING LOGIC (preserved exactly)
+    # 6. Перенаправление к оператору (если ничего не подошло)
     if len(current_path) > 1:
         return await show_current_menu(update, current_path)
     else:
-        await forward_to_manager(update, context)  # Your original forwarding
+        await forward_to_manager(update, context)
 
 async def forward_to_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Forward user's question to manager group"""
