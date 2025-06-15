@@ -64,9 +64,9 @@ async def show_current_menu(update: Update, path):
 
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=" ",  # либо " "
+    # Просто обновляем клавиатуру, не отправляя текст
+    await update.message.reply_text(
+        text=" ",  # <- no caption
         reply_markup=reply_markup
     )
 
