@@ -43,9 +43,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     user_last_bot_message[user_id] = start_msg.message_id # Store once
 
-async def show_current_menu(update: Update, path):
+async def show_current_menu(update: Update, path, context: ContextTypes.DEFAULT_TYPE):
     node = get_node_from_path(path)
-
+    user_id = update.effective_user.id
     if node is None:
         path = ["Main Menu"]
         node = MENU_TREE
@@ -64,18 +64,24 @@ async def show_current_menu(update: Update, path):
         keyboard.append([CUSTOM_QUESTION_BUTTON])
 
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    # ALWAYS try to edit the original start message
+
     try:
-        await update._bot.edit_message_reply_markup(
+        # ✅ Proper bot object
+        await context.bot.edit_message_reply_markup(
             chat_id=update.effective_chat.id,
-            message_id=user_last_bot_message[user_id],  # Original ID
+            message_id=user_last_bot_message[user_id],  # Original start message ID
             reply_markup=reply_markup
         )
-    except:
+    except Exception as e:
+        # Optional: log or print the error if needed
+        print(f"Edit failed: {e}")
+
+        # Fallback — send new message with updated keyboard
         if path[-1] == "Main Menu":
             message = "Выберите категорию:"
         else:
             message = "➤"
+
         await update.message.reply_text(message, reply_markup=reply_markup)
 
 def get_node_from_path(path):
@@ -146,22 +152,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             answer_key = next_node["_answer"]
             await send_answer(update, context, ANSWERS.get(answer_key))
             path.append(msg)                    # перейти внутрь
-            return await show_current_menu(update, path)
+            return await show_current_menu(update, path, context)
 
         # ②  Если next_node — конечная строка‑ключ
         if isinstance(next_node, str):
             await send_answer(update, context, ANSWERS.get(next_node))
-            return await show_current_menu(update, path)
+            return await show_current_menu(update, path, context)
 
         # ③  Обычное подменю‑словарь без _answer
         if isinstance(next_node, dict):
             path.append(msg)
-            return await show_current_menu(update, path)
+            return await show_current_menu(update, path, context)
 
     # ── Переход из главного меню
     if msg in MENU_TREE:
         user_navigation[user_id] = ["Main Menu", msg]
-        return await show_current_menu(update, user_navigation[user_id])
+        return await show_current_menu(update, user_navigation[user_id], context)
 
     # ── Не распознали — шлём менеджеру
     if len(path) > 1:
