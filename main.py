@@ -63,16 +63,11 @@ async def show_current_menu(update: Update, path):
         keyboard.append([CUSTOM_QUESTION_BUTTON])
 
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-
-    # Try to edit the last message
-    try:
-        if update.callback_query:
-            await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
-        else:
-            await update.message.edit_reply_markup(reply_markup=reply_markup)
-    except:
-        # Fallback to minimal message
-        await update.message.reply_text("⌨", reply_markup=reply_markup)
+    if path[-1] == "Main Menu":
+        message = "Выберите категорию:"
+    else:
+        message = "➤"
+    await update.message.reply_text(message, reply_markup=reply_markup)
 
 def get_node_from_path(path):
     """Safe path navigation that preserves your restart logic"""
