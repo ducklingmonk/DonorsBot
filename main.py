@@ -3,7 +3,7 @@ import logging
 import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from data import MENU_TREE, ANSWERS, AUTO_REPLY_KEYS
+from data import MENU_TREE, ANSWERS
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -49,26 +49,26 @@ async def show_current_menu(update: Update, path):
         path = ["Main Menu"]
         node = MENU_TREE
 
-    keyboard = []
+    # Фильтруем только ключи, не начинающиеся с "_"
     if isinstance(node, dict):
-        keyboard = [[item] for item in node.keys()]
+        visible_keys = [k for k in node.keys() if not k.startswith("_")]
+        keyboard = [[item] for item in visible_keys]
+    else:
+        keyboard = []
 
-    # Добавляем кнопку "Назад" (если не в главном меню)
+    # Назад / Свой вопрос
     if len(path) > 1:
         keyboard.append([BACK_BUTTON])
-    # Добавляем "Свой вопрос" ТОЛЬКО в главном меню
     elif len(path) == 1:
         keyboard.append([CUSTOM_QUESTION_BUTTON])
 
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-    if path[-1] == "Main Menu":
-        message = "Выберите категорию:"
-    else:
-        message = f"Выберите подкатегорию ({' > '.join(path[1:])}):"
-
-    await update.message.reply_text(message, reply_markup=reply_markup)
-
+    # Просто обновляем клавиатуру, не отправляя текст
+    await update.message.reply_text(
+        text="",  # <- no caption
+        reply_markup=reply_markup
+    )
 
 def get_node_from_path(path):
     """Safe path navigation that preserves your restart logic"""
@@ -94,93 +94,72 @@ def get_answer_from_path(full_path: list) -> str:
             return None
     return ANSWERS.get(node) if isinstance(node, str) else None
 
+async def send_answer(update, context, answer):
+    if answer is None:
+        await update.message.reply_text("Извините, ответ не найден."); return
+
+    if isinstance(answer, dict):
+        if "photo_url" in answer:
+            await context.bot.send_photo(
+                chat_id=update.effective_chat.id,
+                photo=answer["photo_url"],
+                caption=answer.get("text", "")
+            )
+        else:
+            await update.message.reply_text(answer.get("text", ""), parse_mode='HTML')
+    else:
+        await update.message.reply_text(answer, parse_mode='HTML')
+
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    user_message = update.message.text
+    msg = update.message.text
 
-    # 0. Рестарт логика
+    # ── Перезапуск, «Назад», «Свой вопрос»
     if user_id not in user_navigation:
-        await start(update, context)
-        return
+        await start(update, context); return
+    path = user_navigation[user_id]
 
-    current_path = user_navigation[user_id]
+    if msg == BACK_BUTTON:
+        if len(path) > 1: path.pop()
+        return await show_current_menu(update, path)
 
-    # 1. Обработка спец-кнопок
-    if user_message == BACK_BUTTON:
-        if len(current_path) > 1:
-            current_path.pop()
-        return await show_current_menu(update, current_path)
-
-    if user_message == CUSTOM_QUESTION_BUTTON:
+    if msg == CUSTOM_QUESTION_BUTTON:
         await update.message.reply_text("Напишите свой вопрос в строке ниже, и мы ответим вам в ближайшее время.")
         return
 
-    # 2. Обработка AUTO_REPLY_KEYS — СРАЗУ отправка ответа + переход в подменю
-    if user_message in AUTO_REPLY_KEYS:
-        full_path = current_path + [user_message]
-        answer = get_answer_from_path(full_path)
+    # ── Достали текущий узел и проверили, есть ли такой пункт
+    node = get_node_from_path(path)
+    if isinstance(node, dict) and msg in node:
+        next_node = node[msg]
 
-        if isinstance(answer, dict):
-            if "photo_url" in answer:
-                await context.bot.send_photo(
-                    chat_id=update.effective_chat.id,
-                    photo=answer["photo_url"],
-                    caption=answer.get("text", "")
-                )
-            else:
-                await update.message.reply_text(answer.get("text", ""), parse_mode='HTML')
-        elif answer:
-            await update.message.reply_text(answer, parse_mode='HTML')
+        # ①  Если next_node — dict c _answer  →  присылаем, а затем входим в подменю
+        if isinstance(next_node, dict) and "_answer" in next_node:
+            answer_key = next_node["_answer"]
+            await send_answer(update, context, ANSWERS.get(answer_key))
+            path.append(msg)                    # перейти внутрь
+            return await show_current_menu(update, path)
 
-        # Если в дереве действительно есть подменю — войдём в него
-        current_node = get_node_from_path(current_path)
-        if isinstance(current_node, dict) and user_message in current_node:
-            current_path.append(user_message)
+        # ②  Если next_node — конечная строка‑ключ
+        if isinstance(next_node, str):
+            await send_answer(update, context, ANSWERS.get(next_node))
+            return await show_current_menu(update, path)
 
-        return await show_current_menu(update, current_path)
-
-    # 3. Проверка на точный ответ по пути
-    test_path = current_path + [user_message]
-    answer = get_answer_from_path(test_path)
-    if answer:
-        if isinstance(answer, dict):
-            if "photo_url" in answer:
-                await context.bot.send_photo(
-                    chat_id=update.effective_chat.id,
-                    photo=answer["photo_url"],
-                    caption=answer.get("text", "")
-                )
-            else:
-                await update.message.reply_text(answer.get("text", ""), parse_mode='HTML')
-        else:
-            await update.message.reply_text(answer, parse_mode='HTML')
-        return await show_current_menu(update, current_path)
-
-    # 4. Обычная навигация по меню
-    current_node = get_node_from_path(current_path)
-    if isinstance(current_node, dict) and user_message in current_node:
-        next_node = current_node[user_message]
-
+        # ③  Обычное подменю‑словарь без _answer
         if isinstance(next_node, dict):
-            current_path.append(user_message)
+            path.append(msg)
+            return await show_current_menu(update, path)
 
-        elif isinstance(next_node, str):
-            answer = ANSWERS.get(next_node, "Извините, ответ не найден.")
-            await update.message.reply_text(answer, parse_mode='HTML')
-
-        return await show_current_menu(update, current_path)
-
-    # 5. Переход на раздел из корня
-    if user_message in MENU_TREE:
-        user_navigation[user_id] = ["Main Menu", user_message]
+    # ── Переход из главного меню
+    if msg in MENU_TREE:
+        user_navigation[user_id] = ["Main Menu", msg]
         return await show_current_menu(update, user_navigation[user_id])
 
-    # 6. Перенаправление к оператору (если ничего не подошло)
-    if len(current_path) > 1:
-        return await show_current_menu(update, current_path)
-    else:
-        await forward_to_manager(update, context)
+    # ── Не распознали — шлём менеджеру
+    if len(path) > 1:
+        return await show_current_menu(update, path)
+    await forward_to_manager(update, context)
+
 
 async def forward_to_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Forward user's question to manager group"""
