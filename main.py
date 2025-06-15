@@ -23,7 +23,7 @@ BACK_BUTTON = "⬅️ Назад"
 CUSTOM_QUESTION_BUTTON = "Свой вопрос❓"
 # Track user navigation state {user_id: ["Main Menu", "Kell+", ...]}
 user_navigation = {}
-user_last_bot_message= {}
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command - show main menu"""
@@ -41,7 +41,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Выберите интересующую вас категорию:",
             reply_markup=reply_markup
         )
-    user_last_bot_message[user_id] = start_msg.message_id # Store once
+
 
 async def show_current_menu(update: Update, path, context: ContextTypes.DEFAULT_TYPE):
     node = get_node_from_path(path)
@@ -65,24 +65,14 @@ async def show_current_menu(update: Update, path, context: ContextTypes.DEFAULT_
 
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-    try:
-        # ✅ Proper bot object
-        await context.bot.edit_message_reply_markup(
-            chat_id=update.effective_chat.id,
-            message_id=user_last_bot_message[user_id],  # Original start message ID
-            reply_markup=reply_markup
-        )
-    except Exception as e:
-        # Optional: log or print the error if needed
-        print(f"Edit failed: {e}")
 
-        # Fallback — send new message with updated keyboard
-        if path[-1] == "Main Menu":
-            message = "Выберите категорию:"
-        else:
-            message = "➤"
+    # Fallback — send new message with updated keyboard
+    if path[-1] == "Main Menu":
+        message = "Выберите категорию:"
+    else:
+        message = "➤"
 
-        await update.message.reply_text(message, reply_markup=reply_markup)
+    await update.message.reply_text(message, reply_markup=reply_markup)
 
 def get_node_from_path(path):
     """Safe path navigation that preserves your restart logic"""
