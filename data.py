@@ -388,8 +388,8 @@ https://disk.yandex.ru/i/PSOhAr8hazOO6Q
         "text": """Календарь
 Донорский календарь можно найти в официальных сообществах донорского движения РНИМУ им. Пирогова
 
-Вконтакте https://vk.com/wall-90053351_3089
-Телеграм https://t.me/donor_rnimu/1325
+<a href = "https://vk.com/wall-90053351_3089">Вконтакте </a>
+<a href = "https://t.me/donor_rnimu/1325">Телеграм </a>
 
 Также можно сразу добавить все события во встроенный календарь на вашем устройстве, для этого нужно перейти по <a href = "https://calendar.google.com/calendar/ical/ba74e1fa81fc29c5d262012a4eb8990704ab4cfd6c94133514ab5eda7489de1a%40group.calendar.google.com/public/basic.ics">ссылке</a>
 """,
