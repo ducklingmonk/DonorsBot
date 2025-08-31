@@ -1,31 +1,4 @@
 MENU_TREE = {
-    "Донорство компонентов крови": {
-        "Донорство плазмы": "plasma_donation",
-        "Донорство тромбоцитов": "platelets_donation",
-        "Донорство гранулоцитов": "granulocytes_donation",
-    },
-    "Kell+": {
-        "_answer": "kell_is", #Что это и для чего?
-        "У меня Kell+ Я могу быть донором?": {
-            "_answer": "kell_donation",
-            "Донорство компонентов крови": {
-                "Донорство плазмы": "plasma_donation",
-                "Донорство тромбоцитов": "platelets_donation",
-                "Донорство гранулоцитов": "granulocytes_donation",
-            }
-        }
-    },
-    "РДКМ": {
-        "_answer": "rdkm_info",
-        "Вступление в РДКМ": {
-            "Где я могу вступить в РДКМ?": "where_join_rdkm",
-            "Противопоказания для вступления": {
-                "_answer": "contrrdkm",
-                "Абсолютные": "absolute_contr_rdkm",
-                "Относительные": "relative_contr_rdkm",
-            }
-        },
-    },
     "Где мы?": "location",
     "Акции": {
         "Регистрация": {
@@ -65,15 +38,43 @@ MENU_TREE = {
                 "Паразитарные": "bloodborne_par"
             }
         },
-        "Календарь": {
+    "РДКМ": {
+        "_answer": "rdkm_info",
+        "Вступление в РДКМ": {
+            "Где я могу вступить в РДКМ?": "where_join_rdkm",
+            "Противопоказания для вступления": {
+                "_answer": "contrrdkm",
+                "Абсолютные": "absolute_contr_rdkm",
+                "Относительные": "relative_contr_rdkm",
+            }
+        },
+    },
+     "Kell+": {
+        "_answer": "kell_is", #Что это и для чего?
+        "У меня Kell+ Я могу быть донором?": {
+            "_answer": "kell_donation",
+            "Донорство компонентов крови": {
+                "Донорство плазмы": "plasma_donation",
+                "Донорство тромбоцитов": "platelets_donation",
+                "Донорство гранулоцитов": "granulocytes_donation",
+            }
+        }
+    },
+    "Донорство компонентов крови": {
+        "Донорство плазмы": "plasma_donation",
+        "Донорство тромбоцитов": "platelets_donation",
+        "Донорство гранулоцитов": "granulocytes_donation",
+    },
+     "Почетный донор": {
+            "Почетный донор Москвы": "moscow_donor",
+            "Почетный донор России": "russia_donor"
+    },
+     "Календарь": {
             "_answer": "calendar",
             "Мероприятия в ближайшее время": "events"
         },
     },
-    "Почетный донор": {
-            "Почетный донор Москвы": "moscow_donor",
-            "Почетный донор России": "russia_donor"
-    },
+   
  
 }
 
