@@ -37,8 +37,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     start_msg = await update.message.reply_text(
-            "🩸 Вас приветствует бот для доноров крови\n"
-            "Выберите интересующую вас категорию:",
+            "🩸 Вас приветствует Бот Донорского Движения Пироговского университета\n"
+            "Что вас интересует?",
             reply_markup=reply_markup
         )
 
