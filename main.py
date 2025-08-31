@@ -129,7 +129,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_current_menu(update, path)
 
     if msg == CUSTOM_QUESTION_BUTTON:
-        await update.message.reply_text("Напишите свой вопрос в строке ниже, и мы ответим вам в ближайшее время.")
+        await update.message.reply_text("Данная опция пока находится в разработке")
         return
 
     # ── Достали текущий узел и проверили, есть ли такой пункт
