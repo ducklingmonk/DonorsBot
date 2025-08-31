@@ -37,7 +37,8 @@ MENU_TREE = {
                 "Инфекционные": "bloodborne_inf",
                 "Паразитарные": "bloodborne_par"
             }
-        },
+        }
+    },
         
     "РДКМ": {
         "_answer": "rdkm_info",
@@ -74,10 +75,10 @@ MENU_TREE = {
             "_answer": "calendar",
             "Мероприятия в ближайшее время": "events"
         },
-    },
+    }
    
  
-}
+
 
 
 ANSWERS = {
