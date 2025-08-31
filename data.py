@@ -38,6 +38,7 @@ MENU_TREE = {
                 "Паразитарные": "bloodborne_par"
             }
         },
+        
     "РДКМ": {
         "_answer": "rdkm_info",
         "Вступление в РДКМ": {
@@ -49,7 +50,7 @@ MENU_TREE = {
             }
         },
     },
-     "Kell+": {
+    "Kell+": {
         "_answer": "kell_is", #Что это и для чего?
         "У меня Kell+ Я могу быть донором?": {
             "_answer": "kell_donation",
@@ -65,11 +66,11 @@ MENU_TREE = {
         "Донорство тромбоцитов": "platelets_donation",
         "Донорство гранулоцитов": "granulocytes_donation",
     },
-     "Почетный донор": {
+    "Почетный донор": {
             "Почетный донор Москвы": "moscow_donor",
             "Почетный донор России": "russia_donor"
     },
-     "Календарь": {
+    "Календарь": {
             "_answer": "calendar",
             "Мероприятия в ближайшее время": "events"
         },
